@@ -340,19 +340,24 @@ function Root() {
 
   async function applySession(s) {
     setSession(s);
-    if (!s) { DB.teardown(); setPhase('auth'); return; }
+    if (!s) {
+      DB.teardown();
+      await DB.init('local');
+      setPhase(sessionStorage.getItem('pcn_auth') === '1' ? 'app' : 'locked');
+      return;
+    }
     await DB.init(s.user.id);
     setPhase(sessionStorage.getItem('pcn_auth') === '1' ? 'app' : 'locked');
   }
 
   const logout = async () => {
     sessionStorage.removeItem('pcn_auth');
-    if (hasSupabaseConfig && supabase) { await supabase.auth.signOut(); setPhase('auth'); }
-    else setPhase('locked');
+    if (hasSupabaseConfig && supabase) await supabase.auth.signOut();
+    // onAuthStateChange dispara applySession(null) → fase locked
+    else { DB.teardown(); await DB.init('local'); setPhase('locked'); }
   };
 
   if (phase === 'boot') return <Splash />;
-  if (phase === 'auth') return <AuthScreen />;
   if (phase === 'locked') return <PinLock onUnlock={() => setPhase('app')} />;
   return <Shell onLogout={logout} />;
 }
