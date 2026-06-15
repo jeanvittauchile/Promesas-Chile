@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import * as XLSX from 'xlsx';
 import { DB } from '../lib/db.js';
 import {
   Icon, Avatar, avatarColor, getInitials,
@@ -116,6 +117,148 @@ function SwimmerDetail({ swimmer, onClose, onEdit }) {
   );
 }
 
+/* ---- helpers de fecha para Excel ---- */
+function parseExcelDate(val) {
+  if (!val) return '';
+  if (val instanceof Date) {
+    return `${val.getFullYear()}-${String(val.getMonth() + 1).padStart(2, '0')}-${String(val.getDate()).padStart(2, '0')}`;
+  }
+  const s = String(val).trim();
+  const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  return s;
+}
+
+function SwimmerImport({ group, onClose }) {
+  const toast = useToast();
+  const [rows, setRows] = useState(null);
+
+  function downloadTemplate() {
+    const headers = ['nombre*', 'rut*', 'fechaNacimiento*', 'genero', 'correo', 'tutor', 'correoTutor', 'telefono', 'club', 'colegio', 'direccion'];
+    const example = ['Juan Pérez González', '12.345.678-9', '2010-03-15', 'M', 'juan@mail.com', 'María González', 'maria@mail.com', '+56 9 1234 5678', 'Club Natación Valdivia', 'Liceo San Carlos', 'Av. Principal 123, Valdivia'];
+    const ws = XLSX.utils.aoa_to_sheet([headers, example]);
+    ws['!cols'] = [26, 18, 18, 8, 26, 26, 26, 18, 22, 24, 32].map(wch => ({ wch }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Nadadores');
+    XLSX.writeFile(wb, 'plantilla_nadadores.xlsx');
+  }
+
+  function handleFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const wb = XLSX.read(new Uint8Array(evt.target.result), { type: 'array', cellDates: true });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const raw = XLSX.utils.sheet_to_json(ws, { defval: '' });
+        const parsed = raw.map(r => ({
+          nombre: String(r['nombre*'] || r['nombre'] || '').trim(),
+          rut: String(r['rut*'] || r['rut'] || '').trim(),
+          fechaNacimiento: parseExcelDate(r['fechaNacimiento*'] || r['fechaNacimiento']),
+          genero: String(r['genero'] || 'M').trim().toUpperCase() === 'F' ? 'F' : 'M',
+          correo: String(r['correo'] || '').trim(),
+          tutor: String(r['tutor'] || '').trim(),
+          correoTutor: String(r['correoTutor'] || '').trim(),
+          telefono: String(r['telefono'] || '').trim(),
+          club: String(r['club'] || '').trim(),
+          colegio: String(r['colegio'] || '').trim(),
+          direccion: String(r['direccion'] || '').trim(),
+        })).filter(r => r.nombre || r.rut);
+        setRows(parsed);
+      } catch {
+        toast('No se pudo leer el archivo. Usa el formato de la plantilla.');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function doImport() {
+    const valid = rows.filter(r => r.nombre && r.rut && r.fechaNacimiento);
+    valid.forEach(r => DB.addSwimmer({ ...r, group }));
+    toast(`${valid.length} nadador${valid.length !== 1 ? 'es' : ''} importado${valid.length !== 1 ? 's' : ''}`);
+    onClose();
+  }
+
+  const valid = rows ? rows.filter(r => r.nombre && r.rut && r.fechaNacimiento) : [];
+
+  return (
+    <Modal title="Importar nadadores desde Excel"
+      sub={group === 'DAR' ? 'Grupo DAR — Deportista de Alto Rendimiento' : 'Grupo Beneficiarios'}
+      onClose={onClose} maxWidth={700}
+      foot={<>
+        <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+        {rows && <Button icon="check" disabled={valid.length === 0} onClick={doImport}>Importar {valid.length} nadador{valid.length !== 1 ? 'es' : ''}</Button>}
+      </>}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <div className="card card-pad" style={{ background: 'var(--cyan-050)', borderColor: 'var(--cyan-100)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14 }}>
+            <div>
+              <div style={{ fontWeight: 700, color: 'var(--cyan-700)', fontSize: 14, marginBottom: 4 }}>1. Descarga la plantilla Excel</div>
+              <div style={{ fontSize: 12.5, color: 'var(--cyan-600)', lineHeight: 1.5 }}>
+                Completa los datos de los nadadores. Las columnas con <strong>*</strong> son obligatorias.<br />
+                La fecha de nacimiento debe estar en formato <code>YYYY-MM-DD</code> (ej: 2010-03-15).
+              </div>
+            </div>
+            <Button variant="ghost" icon="download" size="sm" onClick={downloadTemplate}>Plantilla .xlsx</Button>
+          </div>
+        </div>
+
+        <div>
+          <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)', marginBottom: 8 }}>2. Sube el archivo completado</div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', border: '2px dashed var(--line)', borderRadius: 'var(--r-md)', cursor: 'pointer', background: 'var(--surface-2)', transition: 'border-color .15s' }}>
+            <Icon name={rows ? 'check' : 'upload'} style={{ width: 20, height: 20, stroke: rows ? '#137a4f' : 'var(--slate-400)', flex: '0 0 20px' }} />
+            <span style={{ fontSize: 13, color: rows ? '#137a4f' : 'var(--slate-500)', fontWeight: rows ? 600 : 400 }}>
+              {rows ? `Archivo cargado — ${rows.length} fila${rows.length !== 1 ? 's' : ''} detectada${rows.length !== 1 ? 's' : ''}` : 'Haz clic para seleccionar el archivo (.xlsx, .xls, .csv)'}
+            </span>
+            <input type="file" accept=".xlsx,.xls,.csv" onChange={handleFile} style={{ display: 'none' }} />
+          </label>
+        </div>
+
+        {rows && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>3. Vista previa</div>
+              <div style={{ fontSize: 12.5 }}>
+                <span className="badge badge-green">{valid.length} válidos</span>
+                {rows.length - valid.length > 0 && <span className="badge badge-red" style={{ marginLeft: 6 }}>{rows.length - valid.length} incompletos</span>}
+              </div>
+            </div>
+            <div style={{ maxHeight: 260, overflowY: 'auto', border: '1px solid var(--line)', borderRadius: 'var(--r-md)' }}>
+              <table className="tbl">
+                <thead>
+                  <tr><th>Estado</th><th>Nombre</th><th>RUT</th><th>Nacimiento</th><th>Género</th><th>Club</th></tr>
+                </thead>
+                <tbody>
+                  {rows.map((r, i) => {
+                    const ok = r.nombre && r.rut && r.fechaNacimiento;
+                    return (
+                      <tr key={i} style={{ background: ok ? '' : 'var(--red-bg)' }}>
+                        <td><span className={`badge badge-${ok ? 'green' : 'red'}`}>{ok ? '✓' : 'Incompleto'}</span></td>
+                        <td style={{ fontWeight: 600 }}>{r.nombre || <span style={{ color: 'var(--red)' }}>—</span>}</td>
+                        <td style={{ fontVariantNumeric: 'tabular-nums' }}>{r.rut || <span style={{ color: 'var(--red)' }}>—</span>}</td>
+                        <td>{r.fechaNacimiento || <span style={{ color: 'var(--red)' }}>—</span>}</td>
+                        <td>{r.genero === 'F' ? 'Femenino' : 'Masculino'}</td>
+                        <td>{r.club || '—'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {rows.length - valid.length > 0 && (
+              <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--slate-500)' }}>
+                Las filas incompletas (sin nombre, RUT o fecha de nacimiento) serán omitidas al importar.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
 function SwimmersView() {
   const st = useStore();
   const toast = useToast();
@@ -124,6 +267,7 @@ function SwimmersView() {
   const [editing, setEditing] = useState(null);   // swimmer or 'new'
   const [detail, setDetail] = useState(null);
   const [removing, setRemoving] = useState(null);
+  const [importing, setImporting] = useState(false);
 
   const list = useMemo(() => {
     return st.swimmers
@@ -154,6 +298,7 @@ function SwimmersView() {
           <input className="input" placeholder="Buscar por nombre o RUT…" value={q} onChange={e => setQ(e.target.value)} />
         </div>
         <div style={{ flex: 1 }} />
+        <Button variant="ghost" icon="upload" onClick={() => setImporting(true)}>Importar Excel</Button>
         <Button icon="plus" onClick={() => setEditing('new')}>Nuevo nadador</Button>
       </div>
 
@@ -247,6 +392,7 @@ function SwimmersView() {
           onClose={() => setRemoving(null)}
         />
       )}
+      {importing && <SwimmerImport group={group} onClose={() => setImporting(false)} />}
     </div>
   );
 }
