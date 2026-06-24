@@ -16,99 +16,9 @@ import { ReportsView } from './reports.jsx';
 
 const LOGO = '/logo.png';
 
-/* ============================================================
-   LoginScreen — acceso desde un dispositivo nuevo
-   ============================================================ */
-function LoginScreen({ onAnon }) {
-  const [email, setEmail] = useState('');
-  const [step, setStep] = useState('email'); // email | otp
-  const [otp, setOtp] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const sendOtp = async () => {
-    if (!email.trim()) return;
-    setLoading(true); setError('');
-    const { error: err } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: { shouldCreateUser: true, emailRedirectTo: window.location.origin },
-    });
-    if (err) setError('No se pudo enviar el código. Verifica el correo e intenta de nuevo.');
-    else setStep('otp');
-    setLoading(false);
-  };
-
-  const verifyOtp = async () => {
-    if (otp.trim().length < 6) return;
-    setLoading(true); setError('');
-    const { error: err } = await supabase.auth.verifyOtp({
-      email: email.trim(), token: otp.trim(), type: 'email',
-    });
-    if (err) setError('Código incorrecto o expirado. Intenta de nuevo.');
-    setLoading(false);
-  };
-
-  return (
-    <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--bg)' }}>
-      <div style={{ width: '100%', maxWidth: 380, padding: '0 24px' }}>
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <img src={LOGO} alt="Promesas Chile" style={{ width: 80, marginBottom: 16 }} />
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--slate-900)', margin: '0 0 8px' }}>Promesas Chile</h1>
-          {step === 'email'
-            ? <p style={{ color: 'var(--slate-500)', fontSize: 14, margin: 0 }}>Ingresa tu correo para acceder a tus datos desde este dispositivo</p>
-            : <p style={{ color: 'var(--slate-500)', fontSize: 14, margin: 0 }}>Revisa tu bandeja de entrada e ingresa el código de 6 dígitos</p>}
-        </div>
-
-        {step === 'email' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <input
-              className="input" type="email" placeholder="correo@ejemplo.com"
-              value={email} onChange={e => setEmail(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && sendOtp()}
-              style={{ fontSize: 16 }} autoFocus
-            />
-            {error && <p style={{ color: 'var(--red)', fontSize: 13, margin: 0 }}>{error}</p>}
-            <Button onClick={sendOtp} disabled={loading || !email.trim()}>
-              {loading ? 'Enviando…' : 'Enviar código de acceso'}
-            </Button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '4px 0' }}>
-              <div style={{ flex: 1, height: 1, background: 'var(--slate-200)' }} />
-              <span style={{ color: 'var(--slate-400)', fontSize: 13 }}>o</span>
-              <div style={{ flex: 1, height: 1, background: 'var(--slate-200)' }} />
-            </div>
-            <Button variant="ghost" onClick={onAnon} disabled={loading}>
-              Continuar sin cuenta (solo este dispositivo)
-            </Button>
-          </div>
-        )}
-
-        {step === 'otp' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <p style={{ color: 'var(--slate-600)', fontSize: 14, margin: 0, textAlign: 'center' }}>
-              Código enviado a <strong>{email}</strong>
-            </p>
-            <input
-              className="input" type="text" inputMode="numeric" placeholder="000000"
-              value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              onKeyDown={e => e.key === 'Enter' && verifyOtp()}
-              maxLength={6} style={{ fontSize: 24, letterSpacing: 6, textAlign: 'center' }} autoFocus
-            />
-            {error && <p style={{ color: 'var(--red)', fontSize: 13, margin: 0 }}>{error}</p>}
-            <Button onClick={verifyOtp} disabled={loading || otp.length < 6}>
-              {loading ? 'Verificando…' : 'Ingresar'}
-            </Button>
-            <button
-              style={{ background: 'none', border: 'none', color: 'var(--slate-400)', fontSize: 13, cursor: 'pointer', padding: '4px 0' }}
-              onClick={() => { setStep('email'); setOtp(''); setError(''); }}
-            >
-              ← Cambiar correo
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+// Credenciales de cuenta compartida (opcionales — definir en .env.local y Vercel)
+const SHARED_EMAIL    = import.meta.env.VITE_APP_EMAIL;
+const SHARED_PASSWORD = import.meta.env.VITE_APP_PASSWORD;
 
 /* ============================================================
    Ajustes
@@ -120,33 +30,7 @@ function Settings({ onClose }) {
   const set = (k) => (e) => setC(s => ({ ...s, [k]: e.target.value }));
   const [confirmReset, setConfirmReset] = useState(false);
 
-  // Vinculación de correo para usuarios anónimos
-  const [authUser, setAuthUser] = useState(null);
-  const [linkEmail, setLinkEmail] = useState('');
-  const [linkLoading, setLinkLoading] = useState(false);
-  const [linkError, setLinkError] = useState('');
-  const [linkSent, setLinkSent] = useState(false);
-
-  useEffect(() => {
-    supabase?.auth.getUser().then(({ data }) => setAuthUser(data?.user ?? null));
-  }, []);
-
   const saveCoach = () => { DB.updateCoach(c); toast('Datos del técnico guardados'); };
-
-  const sendLinkEmail = async () => {
-    if (!linkEmail.trim()) return;
-    setLinkLoading(true); setLinkError('');
-    const { error } = await supabase.auth.updateUser(
-      { email: linkEmail.trim() },
-      { emailRedirectTo: window.location.origin },
-    );
-    if (error) setLinkError('No se pudo enviar el correo: ' + error.message);
-    else setLinkSent(true);
-    setLinkLoading(false);
-  };
-
-  const isAnon = authUser?.is_anonymous === true;
-  const hasEmail = authUser?.email;
 
   return (
     <Modal title="Ajustes" sub="Perfil del técnico y datos" onClose={onClose} maxWidth={560}
@@ -163,41 +47,6 @@ function Settings({ onClose }) {
         </div>
         <div><Button size="sm" icon="check" onClick={saveCoach}>Guardar perfil</Button></div>
       </div>
-
-      {hasSupabaseConfig && (
-        <>
-          <div className="divider" />
-          <div className="section-title"><h2>Acceso desde otros dispositivos</h2><div className="line" /></div>
-          {hasEmail && !isAnon ? (
-            <p style={{ fontSize: 13, color: 'var(--slate-500)', marginTop: 0 }}>
-              Cuenta vinculada a <strong>{authUser.email}</strong>. Usa ese correo para acceder desde cualquier dispositivo.
-            </p>
-          ) : linkSent ? (
-            <p style={{ fontSize: 13, color: 'var(--green)', marginTop: 0 }}>
-              Revisa tu correo <strong>{linkEmail}</strong> y haz clic en el enlace de confirmación. Una vez confirmado, podrás usar ese correo para ingresar desde otros dispositivos.
-            </p>
-          ) : (
-            <>
-              <p style={{ fontSize: 13, color: 'var(--slate-500)', marginTop: 0 }}>
-                Vincula un correo a tu cuenta para acceder a tus datos desde cualquier dispositivo. Se enviará un enlace de confirmación.
-              </p>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                <div style={{ flex: 1, minWidth: 200 }}>
-                  <input
-                    className="input" type="email" placeholder="tu@correo.com"
-                    value={linkEmail} onChange={e => setLinkEmail(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && sendLinkEmail()}
-                  />
-                </div>
-                <Button size="sm" onClick={sendLinkEmail} disabled={linkLoading || !linkEmail.trim()}>
-                  {linkLoading ? 'Enviando…' : 'Vincular correo'}
-                </Button>
-              </div>
-              {linkError && <p style={{ fontSize: 13, color: 'var(--red)', marginTop: 6 }}>{linkError}</p>}
-            </>
-          )}
-        </>
-      )}
 
       <div className="divider" />
       <div className="section-title"><h2>Datos</h2><div className="line" /></div>
@@ -314,9 +163,15 @@ function Splash({ text = 'Cargando…' }) {
 
 /* ============================================================
    Raíz: gestiona sesión Supabase → init DB → Shell
+
+   Si existen VITE_APP_EMAIL + VITE_APP_PASSWORD, la app usa
+   una cuenta compartida: todos los dispositivos ven los mismos
+   datos sin ningún paso de login.
+   Sin esas variables, crea una sesión anónima local (comportamiento
+   anterior, datos solo en este dispositivo).
    ============================================================ */
 function Root() {
-  const [phase, setPhase] = useState('boot'); // boot | login | app
+  const [phase, setPhase] = useState('boot'); // boot | app
 
   const applySession = useCallback(async (s) => {
     if (!s) {
@@ -337,23 +192,40 @@ function Root() {
         return;
       }
 
-      const { data } = await supabase.auth.getSession();
-
-      if (!data.session) {
-        // Sin sesión — mostrar pantalla de login para que el usuario elija
-        // cómo acceder (correo o modo anónimo local).
-        setPhase('login');
+      // Reusar sesión existente si la hay (evita login innecesario)
+      const { data: existing } = await supabase.auth.getSession();
+      if (existing.session) {
+        await applySession(existing.session);
         const sub = supabase.auth.onAuthStateChange((event, s) => {
           if (event === 'INITIAL_SESSION') return;
-          if (s) applySession(s);
+          applySession(s);
         });
         unsub = sub.data.subscription;
         return;
       }
 
-      await applySession(data.session);
-      // INITIAL_SESSION ya fue manejado manualmente arriba; ignorarlo para
-      // evitar una segunda hidratación que puede sobreescribir datos locales.
+      // Sin sesión — iniciar sesión automáticamente
+      if (SHARED_EMAIL && SHARED_PASSWORD) {
+        // Cuenta compartida: mismos datos en todos los dispositivos
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: SHARED_EMAIL,
+          password: SHARED_PASSWORD,
+        });
+        if (!error && data.session) {
+          await applySession(data.session);
+          const sub = supabase.auth.onAuthStateChange((event, s) => {
+            if (event === 'INITIAL_SESSION') return;
+            applySession(s);
+          });
+          unsub = sub.data.subscription;
+          return;
+        }
+        console.warn('[auth] signInWithPassword falló, usando sesión anónima:', error?.message);
+      }
+
+      // Fallback: sesión anónima (datos solo en este dispositivo)
+      const { data: anonData } = await supabase.auth.signInAnonymously();
+      await applySession(anonData.session);
       const sub = supabase.auth.onAuthStateChange((event, s) => {
         if (event === 'INITIAL_SESSION') return;
         applySession(s);
@@ -363,13 +235,7 @@ function Root() {
     return () => { if (unsub) unsub.unsubscribe(); };
   }, [applySession]);
 
-  const handleAnon = useCallback(async () => {
-    const { data } = await supabase.auth.signInAnonymously();
-    await applySession(data.session);
-  }, [applySession]);
-
   if (phase === 'boot') return <Splash />;
-  if (phase === 'login') return <LoginScreen onAnon={handleAnon} />;
   return <Shell />;
 }
 
