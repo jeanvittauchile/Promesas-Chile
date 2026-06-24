@@ -301,7 +301,7 @@ function TrainingsView() {
 
   const [yy, mm] = ym.split('-').map(Number);
   const first = new Date(yy, mm - 1, 1);
-  const startPad = first.getDay();
+  const startPad = (first.getDay() + 6) % 7;
   const daysInMonth = new Date(yy, mm, 0).getDate();
 
   const byDay = useMemo(() => {
@@ -337,7 +337,7 @@ function TrainingsView() {
         {/* Calendar */}
         <div className="card card-pad">
           <div className="cal-grid cal-head">
-            {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(d => <div key={d} className="cal-wd">{d}</div>)}
+            {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(d => <div key={d} className="cal-wd">{d}</div>)}
           </div>
           <div className="cal-grid">
             {Array.from({ length: startPad }).map((_, i) => <div key={'p' + i} className="cal-cell empty" />)}
