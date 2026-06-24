@@ -18,7 +18,6 @@ import {
   emptyState, seed,
 } from './domain.js';
 
-const PIN_KEY = 'pcn_pin_v1';
 const cacheKey = (userId) => `pcn_cache_v1:${userId || 'local'}`;
 
 let state = emptyState();
@@ -201,11 +200,6 @@ export const DB = {
   subscribe(fn) { subs.add(fn); return () => subs.delete(fn); },
   isReady: () => ready,
   init, teardown,
-
-  // PIN (bloqueo de dispositivo local)
-  hasPin() { return !!localStorage.getItem(PIN_KEY); },
-  setPin(p) { localStorage.setItem(PIN_KEY, p); },
-  checkPin(p) { return localStorage.getItem(PIN_KEY) === p; },
 
   // Técnico
   updateCoach(patch) {
