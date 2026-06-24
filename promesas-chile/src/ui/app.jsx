@@ -31,7 +31,7 @@ function LoginScreen({ onAnon }) {
     setLoading(true); setError('');
     const { error: err } = await supabase.auth.signInWithOtp({
       email: email.trim(),
-      options: { shouldCreateUser: true },
+      options: { shouldCreateUser: true, emailRedirectTo: window.location.origin },
     });
     if (err) setError('No se pudo enviar el código. Verifica el correo e intenta de nuevo.');
     else setStep('otp');
@@ -136,7 +136,10 @@ function Settings({ onClose }) {
   const sendLinkEmail = async () => {
     if (!linkEmail.trim()) return;
     setLinkLoading(true); setLinkError('');
-    const { error } = await supabase.auth.updateUser({ email: linkEmail.trim() });
+    const { error } = await supabase.auth.updateUser(
+      { email: linkEmail.trim() },
+      { emailRedirectTo: window.location.origin },
+    );
     if (error) setLinkError('No se pudo enviar el correo: ' + error.message);
     else setLinkSent(true);
     setLinkLoading(false);
