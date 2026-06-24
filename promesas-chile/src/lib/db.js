@@ -121,6 +121,12 @@ async function hydrateFromCloud() {
       supabase.from('coach').select('doc').eq('owner', userId).maybeSingle(),
     ]);
 
+    // Si alguna consulta falló (RLS, red, permisos), conservar caché local intacto.
+    if ([sw, tr, ev, bj, att, rep, co].some(r => r.error)) {
+      console.warn('[hydrate] errores de Supabase, se conserva el caché local');
+      return;
+    }
+
     const next = emptyState();
     next.swimmers = (sw.data || []).map(r => r.doc);
     next.trainings = (tr.data || []).map(r => r.doc);
@@ -141,9 +147,17 @@ async function hydrateFromCloud() {
     if (co.data && co.data.doc) {
       next.coach = co.data.doc;
     } else {
-      // primer ingreso: crea fila de técnico por defecto
-      next.coach = state.coach && state.coach.email ? state.coach : emptyState().coach;
+      next.coach = state.coach && state.coach.nombre ? state.coach : emptyState().coach;
       enqueue({ type: 'coach', doc: next.coach });
+    }
+
+    // Si la nube devuelve vacío pero tenemos datos locales, no sobreescribir.
+    // Puede ocurrir cuando los datos aún no se sincronizaron (ingreso offline).
+    const cloudEmpty = next.swimmers.length === 0 && next.trainings.length === 0 && next.evaluations.length === 0;
+    const localHasData = state.swimmers.length > 0 || state.trainings.length > 0;
+    if (cloudEmpty && localHasData) {
+      flush(); // reintentar sincronizar datos locales a la nube
+      return;
     }
 
     state = next;

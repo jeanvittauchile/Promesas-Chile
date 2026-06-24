@@ -179,7 +179,12 @@ function Root() {
         data = anonData;
       }
       await applySession(data.session);
-      const sub = supabase.auth.onAuthStateChange((_e, s) => applySession(s));
+      // INITIAL_SESSION ya fue manejado manualmente arriba; ignorarlo para
+      // evitar una segunda hidratación que puede sobreescribir datos locales.
+      const sub = supabase.auth.onAuthStateChange((event, s) => {
+        if (event === 'INITIAL_SESSION') return;
+        applySession(s);
+      });
       unsub = sub.data.subscription;
     })();
     return () => { if (unsub) unsub.unsubscribe(); };
