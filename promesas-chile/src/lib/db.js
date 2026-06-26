@@ -147,10 +147,13 @@ async function hydrateFromCloud() {
     next.reports = reports;
 
     if (co.data && co.data.doc) {
-      next.coach = co.data.doc;
+      const { goldTimes: cloudGoldTimes, ...coachData } = co.data.doc;
+      next.coach = coachData;
+      next.goldTimes = cloudGoldTimes || {};
     } else {
       next.coach = state.coach && state.coach.nombre ? state.coach : emptyState().coach;
-      enqueue({ type: 'coach', doc: next.coach });
+      next.goldTimes = state.goldTimes || {};
+      enqueue({ type: 'coach', doc: { ...next.coach, goldTimes: next.goldTimes } });
     }
 
     // Si la nube devuelve vacío pero tenemos datos locales, no sobreescribir.
@@ -162,7 +165,6 @@ async function hydrateFromCloud() {
       return;
     }
 
-    next.goldTimes = state.goldTimes || {};
     state = next;
     commit();
   } catch (e) {
@@ -220,11 +222,13 @@ export const DB = {
     if (time == null) delete state.goldTimes[cat][genero][key];
     else state.goldTimes[cat][genero][key] = time;
     commit();
+    enqueue({ type: 'coach', doc: { ...state.coach, goldTimes: state.goldTimes } });
   },
   resetGoldTimes(cat) {
     if (cat) delete state.goldTimes[cat];
     else state.goldTimes = {};
     commit();
+    enqueue({ type: 'coach', doc: { ...state.coach, goldTimes: state.goldTimes } });
   },
   get: () => state,
   subscribe(fn) { subs.add(fn); return () => subs.delete(fn); },
@@ -235,7 +239,7 @@ export const DB = {
   updateCoach(patch) {
     state.coach = { ...state.coach, ...patch };
     commit();
-    enqueue({ type: 'coach', doc: state.coach });
+    enqueue({ type: 'coach', doc: { ...state.coach, goldTimes: state.goldTimes } });
   },
 
   // Nadadores
