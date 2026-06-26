@@ -229,6 +229,63 @@ export const METRIC_TYPES = {
 
 export function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
+/* ---------- Pruebas y tiempos de referencia Oro Sudamericano ---------- */
+export const PRUEBAS = [
+  '50m Libre', '50m Espalda', '50m Pecho', '50m Mariposa',
+  '100m Libre', '100m Espalda', '100m Pecho', '100m Mariposa',
+  '200m Libre', '200m Espalda', '200m Pecho', '200m Mariposa', '200m Combinado',
+  '400m Libre', '400m Combinado', '800m Libre', '1500m Libre',
+];
+
+const EVENT_KEY = {
+  '50m Libre': '50 Free', '50m Espalda': '50 Back', '50m Pecho': '50 Breast', '50m Mariposa': '50 Fly',
+  '100m Libre': '100 Free', '100m Espalda': '100 Back', '100m Pecho': '100 Breast', '100m Mariposa': '100 Fly',
+  '200m Libre': '200 Free', '200m Espalda': '200 Back', '200m Pecho': '200 Breast', '200m Mariposa': '200 Fly',
+  '200m Combinado': '200 IM', '400m Libre': '400 Free', '400m Combinado': '400 IM',
+  '800m Libre': '800 Free', '1500m Libre': '1500 Free',
+};
+
+const ORO_SUD_JUV_B = {
+  F: {
+    '50 Free': '00:26.04', '50 Back': '00:29.60', '50 Breast': '00:32.37', '50 Fly': '00:26.55',
+    '100 Free': '00:56.21', '100 Back': '01:03.95', '100 Breast': '01:11.29', '100 Fly': '00:59.96',
+    '200 Free': '02:01.22', '200 Back': '02:15.77', '200 Breast': '02:38.57', '200 Fly': '02:15.22',
+    '200 IM': '02:18.50', '400 Free': '04:18.27', '400 IM': '04:52.34', '800 Free': '08:54.68',
+  },
+  M: {
+    '50 Free': '00:22.88', '50 Back': '00:25.30', '50 Breast': '00:29.22', '50 Fly': '00:24.31',
+    '100 Free': '00:49.92', '100 Back': '00:54.58', '100 Breast': '01:04.04', '100 Fly': '00:54.47',
+    '200 Free': '02:50.62', '200 Back': '02:00.30', '200 Breast': '02:16.23', '200 Fly': '02:04.00',
+    '200 IM': '02:05.66', '400 Free': '04:03.18', '400 IM': '04:28.45', '1500 Free': '15:30.62',
+  },
+};
+
+export function parseSwimTime(t) {
+  if (!t) return null;
+  const s = String(t).trim();
+  const m = s.match(/^(\d+):(\d+)\.(\d+)$/);
+  if (m) return parseInt(m[1], 10) * 60 + parseInt(m[2], 10) + parseInt(m[3], 10) / Math.pow(10, m[3].length);
+  const m2 = s.match(/^(\d+)\.(\d+)$/);
+  if (m2) return parseInt(m2[1], 10) + parseInt(m2[2], 10) / Math.pow(10, m2[2].length);
+  return null;
+}
+
+export function goldTimeFor(prueba, genero, fechaNac) {
+  if (!prueba || !genero || !fechaNac) return null;
+  const key = EVENT_KEY[prueba];
+  if (!key) return null;
+  const y = parseInt(String(fechaNac).slice(0, 4), 10);
+  if (y >= 2008 && y <= 2010) return ORO_SUD_JUV_B[genero]?.[key] ?? null;
+  return null;
+}
+
+export function proximityPct(swimmerTime, goldTime) {
+  const sw = parseSwimTime(swimmerTime);
+  const gd = parseSwimTime(goldTime);
+  if (!sw || !gd) return null;
+  return Math.round((gd / sw) * 1000) / 10;
+}
+
 /* ---------- Datos de demostración (mismos del prototipo) ---------- */
 export function seed() {
   const dar = [

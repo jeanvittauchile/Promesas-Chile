@@ -51,7 +51,12 @@ function SwimmerForm({ initial, group, onSave, onClose }) {
           <>
             <div className="divider" />
             <div className="field-grid">
-              <Field label="Prueba"><input className="input" value={f.prueba} onChange={set('prueba')} placeholder="ej: 100m Mariposa" /></Field>
+              <Field label="Prueba">
+                <select className="select" value={f.prueba} onChange={set('prueba')}>
+                  <option value="">— seleccionar —</option>
+                  {DB.PRUEBAS.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </Field>
               <Field label="Tiempo de clasificación"><input className="input" value={f.tiempo} onChange={set('tiempo')} placeholder="ej: 1:05.43" /></Field>
             </div>
           </>
@@ -84,10 +89,15 @@ function SwimmerDetail({ swimmer, onClose, onEdit }) {
   const att = st.attendance[swimmer.id] || {};
   const present = Object.keys(att).filter(d => d.startsWith(ym) && att[d]).length;
   const evals = st.evaluations.filter(e => e.swimmerIds.includes(swimmer.id));
+  const goldTime = swimmer.group === 'BEN' ? DB.goldTimeFor(swimmer.prueba, swimmer.genero, swimmer.fechaNacimiento) : null;
+  const pct = goldTime ? DB.proximityPct(swimmer.tiempo, goldTime) : null;
+  const pctColor = pct == null ? null : pct >= 95 ? '#0f766e' : pct >= 85 ? '#0369a1' : pct >= 70 ? '#b45309' : '#6b7280';
   const rows = [
     ...(swimmer.group === 'BEN' && (swimmer.prueba || swimmer.tiempo) ? [
       ['award', 'Prueba', swimmer.prueba || '—'],
-      ['clock', 'Tiempo de clasificación', swimmer.tiempo || '—'],
+      ['clock', 'Tiempo de clasificación', swimmer.tiempo
+        ? `${swimmer.tiempo}${pct != null ? ` · ${pct}% del oro (${goldTime})` : ''}`
+        : '—'],
     ] : []),
     ['user', 'RUT', swimmer.rut || '—'],
     ['calendar', 'Nacimiento', `${fmtDate(swimmer.fechaNacimiento)}${age != null ? ` · ${age} años` : ''}`],
@@ -112,6 +122,7 @@ function SwimmerDetail({ swimmer, onClose, onEdit }) {
           <span className="badge badge-slate">{swimmer.genero === 'F' ? 'Femenino' : 'Masculino'}</span>
           {swimmer.group === 'DAR' && <span className="badge badge-green">{present} asistencias este mes</span>}
           {evals.length > 0 && <span className="badge badge-navy">{evals.length} evaluaciones</span>}
+          {pct != null && <span className="badge" style={{ background: pctColor + '1a', color: pctColor, border: `1px solid ${pctColor}40` }}>{pct}% del oro sudamericano</span>}
         </div>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
@@ -363,7 +374,21 @@ function SwimmersView() {
                   <td><span className="badge badge-cyan">{DB.categoryFor(s.fechaNacimiento)}</span></td>
                   <td style={{ fontVariantNumeric: 'tabular-nums' }}>{s.rut}</td>
                   <td>{s.club || '—'}</td>
-                  {group === 'BEN' ? <><td>{s.prueba || '—'}</td><td>{s.tiempo || '—'}</td></> : <td>{s.tutor || '—'}</td>}
+                  {group === 'BEN' ? (
+                    <>
+                      <td>{s.prueba || '—'}</td>
+                      <td>
+                        {s.tiempo || '—'}
+                        {(() => {
+                          const gt = DB.goldTimeFor(s.prueba, s.genero, s.fechaNacimiento);
+                          const p = gt ? DB.proximityPct(s.tiempo, gt) : null;
+                          if (p == null) return null;
+                          const c = p >= 95 ? '#0f766e' : p >= 85 ? '#0369a1' : p >= 70 ? '#b45309' : '#6b7280';
+                          return <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 700, color: c }}>({p}%)</span>;
+                        })()}
+                      </td>
+                    </>
+                  ) : <td>{s.tutor || '—'}</td>}
                   <td onClick={e => e.stopPropagation()}>
                     <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
                       <button className="btn-icon" title="Editar" onClick={() => setEditing(s)}><Icon name="edit" /></button>

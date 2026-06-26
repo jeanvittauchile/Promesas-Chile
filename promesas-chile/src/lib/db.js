@@ -15,6 +15,7 @@ import { supabase, hasSupabaseConfig } from './supabase.js';
 import {
   PROTOCOLS, METRIC_TYPES, CAT_BY_YEAR,
   categoryFor, ageFor, levelFor, parseVolume, volumenFor, uid,
+  PRUEBAS, parseSwimTime, goldTimeFor, proximityPct,
   emptyState, seed,
 } from './domain.js';
 
@@ -210,6 +211,7 @@ function teardown() {
 export const DB = {
   PROTOCOLS, METRIC_TYPES, CAT_BY_YEAR,
   categoryFor, ageFor, levelFor, parseVolume, volumenFor, uid,
+  PRUEBAS, parseSwimTime, goldTimeFor, proximityPct,
   get: () => state,
   subscribe(fn) { subs.add(fn); return () => subs.delete(fn); },
   isReady: () => ready,
