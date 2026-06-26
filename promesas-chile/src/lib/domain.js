@@ -260,6 +260,21 @@ const ORO_SUD_JUV_B = {
   },
 };
 
+const ORO_SUD_JUV_A = {
+  F: {
+    '50 Free': '00:26.75', '50 Back': '00:30.03', '50 Breast': '00:34.08', '50 Fly': '00:27.67',
+    '100 Free': '00:57.49', '100 Back': '01:03.78', '100 Breast': '01:13.59', '100 Fly': '01:00.90',
+    '200 Free': '02:00.65', '200 Back': '02:13.75', '200 Breast': '02:40.15', '200 Fly': '02:16.01',
+    '200 IM': '02:17.98', '400 Free': '04:09.85', '400 IM': '04:49.17', '800 Free': '08:39.22',
+  },
+  M: {
+    '50 Free': '00:24.13', '50 Back': '00:27.33', '50 Breast': '00:28.44', '50 Fly': '00:25.47',
+    '100 Free': '00:51.34', '100 Back': '00:59.17', '100 Breast': '01:03.63', '100 Fly': '00:56.28',
+    '200 Free': '02:53.00', '200 Back': '02:09.25', '200 Breast': '02:22.19', '200 Fly': '02:05.10',
+    '200 IM': '02:09.65', '400 Free': '04:01.90', '400 IM': '04:38.81', '1500 Free': '15:06.15',
+  },
+};
+
 export function parseSwimTime(t) {
   if (!t) return null;
   const s = String(t).trim();
@@ -275,6 +290,7 @@ export function goldTimeFor(prueba, genero, fechaNac) {
   const key = EVENT_KEY[prueba];
   if (!key) return null;
   const y = parseInt(String(fechaNac).slice(0, 4), 10);
+  if (y >= 2011 && y <= 2012) return ORO_SUD_JUV_A[genero]?.[key] ?? null;
   if (y >= 2008 && y <= 2010) return ORO_SUD_JUV_B[genero]?.[key] ?? null;
   return null;
 }
