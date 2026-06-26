@@ -14,6 +14,7 @@ import {
 const SW_EMPTY = {
   nombre: '', rut: '', fechaNacimiento: '', genero: 'M', correo: '',
   tutor: '', correoTutor: '', telefono: '', club: '', direccion: '', colegio: '',
+  prueba: '', tiempo: '',
 };
 
 function SwimmerForm({ initial, group, onSave, onClose }) {
@@ -46,6 +47,15 @@ function SwimmerForm({ initial, group, onSave, onClose }) {
             </div>
           </Field>
         </div>
+        {group === 'BEN' && (
+          <>
+            <div className="divider" />
+            <div className="field-grid">
+              <Field label="Prueba"><input className="input" value={f.prueba} onChange={set('prueba')} placeholder="ej: 100m Mariposa" /></Field>
+              <Field label="Tiempo de clasificación"><input className="input" value={f.tiempo} onChange={set('tiempo')} placeholder="ej: 1:05.43" /></Field>
+            </div>
+          </>
+        )}
         <div className="divider" />
         <div className="field-grid">
           <Field label="Correo personal"><input className="input" value={f.correo} onChange={set('correo')} placeholder="nadador@mail.com" /></Field>
@@ -75,6 +85,10 @@ function SwimmerDetail({ swimmer, onClose, onEdit }) {
   const present = Object.keys(att).filter(d => d.startsWith(ym) && att[d]).length;
   const evals = st.evaluations.filter(e => e.swimmerIds.includes(swimmer.id));
   const rows = [
+    ...(swimmer.group === 'BEN' && (swimmer.prueba || swimmer.tiempo) ? [
+      ['award', 'Prueba', swimmer.prueba || '—'],
+      ['clock', 'Tiempo de clasificación', swimmer.tiempo || '—'],
+    ] : []),
     ['user', 'RUT', swimmer.rut || '—'],
     ['calendar', 'Nacimiento', `${fmtDate(swimmer.fechaNacimiento)}${age != null ? ` · ${age} años` : ''}`],
     ['mail', 'Correo personal', swimmer.correo || '—'],
@@ -134,10 +148,17 @@ function SwimmerImport({ group, onClose }) {
   const [rows, setRows] = useState(null);
 
   function downloadTemplate() {
-    const headers = ['nombre*', 'rut', 'fechaNacimiento', 'genero', 'correo', 'tutor', 'correoTutor', 'telefono', 'club', 'colegio', 'direccion'];
-    const example = ['Juan Pérez González', '12.345.678-9', '2010-03-15', 'M', 'juan@mail.com', 'María González', 'maria@mail.com', '+56 9 1234 5678', 'Club Natación Valdivia', 'Liceo San Carlos', 'Av. Principal 123, Valdivia'];
+    const headers = group === 'BEN'
+      ? ['nombre*', 'rut', 'fechaNacimiento', 'genero', 'prueba', 'tiempo', 'correo', 'tutor', 'correoTutor', 'telefono', 'club', 'colegio', 'direccion']
+      : ['nombre*', 'rut', 'fechaNacimiento', 'genero', 'correo', 'tutor', 'correoTutor', 'telefono', 'club', 'colegio', 'direccion'];
+    const example = group === 'BEN'
+      ? ['Ana Pérez González', '12.345.678-9', '2010-03-15', 'F', '100m Mariposa', '1:05.43', 'ana@mail.com', 'María González', 'maria@mail.com', '+56 9 1234 5678', 'Club Natación Valdivia', 'Liceo San Carlos', 'Av. Principal 123, Valdivia']
+      : ['Juan Pérez González', '12.345.678-9', '2010-03-15', 'M', 'juan@mail.com', 'María González', 'maria@mail.com', '+56 9 1234 5678', 'Club Natación Valdivia', 'Liceo San Carlos', 'Av. Principal 123, Valdivia'];
     const ws = XLSX.utils.aoa_to_sheet([headers, example]);
-    ws['!cols'] = [26, 18, 18, 8, 26, 26, 26, 18, 22, 24, 32].map(wch => ({ wch }));
+    ws['!cols'] = (group === 'BEN'
+      ? [26, 18, 18, 8, 20, 14, 26, 26, 26, 18, 22, 24, 32]
+      : [26, 18, 18, 8, 26, 26, 26, 18, 22, 24, 32]
+    ).map(wch => ({ wch }));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Nadadores');
     XLSX.writeFile(wb, 'plantilla_nadadores.xlsx');
@@ -157,6 +178,8 @@ function SwimmerImport({ group, onClose }) {
           rut: String(r['rut*'] || r['rut'] || '').trim(),
           fechaNacimiento: parseExcelDate(r['fechaNacimiento*'] || r['fechaNacimiento']),
           genero: String(r['genero'] || 'M').trim().toUpperCase() === 'F' ? 'F' : 'M',
+          prueba: String(r['prueba'] || '').trim(),
+          tiempo: String(r['tiempo'] || '').trim(),
           correo: String(r['correo'] || '').trim(),
           tutor: String(r['tutor'] || '').trim(),
           correoTutor: String(r['correoTutor'] || '').trim(),
@@ -320,7 +343,9 @@ function SwimmersView() {
           <table className="tbl">
             <thead>
               <tr>
-                <th>Nadador</th><th>Categoría</th><th>RUT</th><th>Club</th><th>Tutor</th><th style={{ textAlign: 'right' }}>Acciones</th>
+                <th>Nadador</th><th>Categoría</th><th>RUT</th><th>Club</th>
+                {group === 'BEN' ? <><th>Prueba</th><th>Tiempo</th></> : <th>Tutor</th>}
+                <th style={{ textAlign: 'right' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -338,7 +363,7 @@ function SwimmersView() {
                   <td><span className="badge badge-cyan">{DB.categoryFor(s.fechaNacimiento)}</span></td>
                   <td style={{ fontVariantNumeric: 'tabular-nums' }}>{s.rut}</td>
                   <td>{s.club || '—'}</td>
-                  <td>{s.tutor || '—'}</td>
+                  {group === 'BEN' ? <><td>{s.prueba || '—'}</td><td>{s.tiempo || '—'}</td></> : <td>{s.tutor || '—'}</td>}
                   <td onClick={e => e.stopPropagation()}>
                     <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
                       <button className="btn-icon" title="Editar" onClick={() => setEditing(s)}><Icon name="edit" /></button>
