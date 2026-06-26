@@ -21,7 +21,7 @@ function SwimmerForm({ initial, group, onSave, onClose }) {
   const set = (k) => (e) => setF(s => ({ ...s, [k]: e.target.value }));
   const cat = DB.categoryFor(f.fechaNacimiento);
   const age = DB.ageFor(f.fechaNacimiento);
-  const valid = f.nombre.trim() && f.rut.trim() && f.fechaNacimiento;
+  const valid = f.nombre.trim();
   return (
     <Modal
       title={initial ? 'Editar nadador' : 'Nuevo nadador'}
@@ -35,10 +35,10 @@ function SwimmerForm({ initial, group, onSave, onClose }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div className="field-grid">
           <Field label="Nombre completo" req><input className="input" value={f.nombre} onChange={set('nombre')} placeholder="Nombre y apellidos" /></Field>
-          <Field label="RUT" req><input className="input" value={f.rut} onChange={set('rut')} placeholder="12.345.678-9" /></Field>
+          <Field label="RUT"><input className="input" value={f.rut} onChange={set('rut')} placeholder="12.345.678-9" /></Field>
         </div>
         <div className="field-grid-3">
-          <Field label="Fecha de nacimiento" req><input type="date" className="input" value={f.fechaNacimiento} onChange={set('fechaNacimiento')} /></Field>
+          <Field label="Fecha de nacimiento"><input type="date" className="input" value={f.fechaNacimiento} onChange={set('fechaNacimiento')} /></Field>
           <Field label="Género"><select className="select" value={f.genero} onChange={set('genero')}><option value="M">Masculino</option><option value="F">Femenino</option></select></Field>
           <Field label="Categoría (automática)">
             <div className="input" style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--cyan-050)', borderColor: 'var(--cyan-100)', color: 'var(--cyan-700)', fontWeight: 700 }}>
@@ -75,7 +75,7 @@ function SwimmerDetail({ swimmer, onClose, onEdit }) {
   const present = Object.keys(att).filter(d => d.startsWith(ym) && att[d]).length;
   const evals = st.evaluations.filter(e => e.swimmerIds.includes(swimmer.id));
   const rows = [
-    ['user', 'RUT', swimmer.rut],
+    ['user', 'RUT', swimmer.rut || '—'],
     ['calendar', 'Nacimiento', `${fmtDate(swimmer.fechaNacimiento)}${age != null ? ` · ${age} años` : ''}`],
     ['mail', 'Correo personal', swimmer.correo || '—'],
     ['phone', 'Teléfono', swimmer.telefono || '—'],
@@ -134,7 +134,7 @@ function SwimmerImport({ group, onClose }) {
   const [rows, setRows] = useState(null);
 
   function downloadTemplate() {
-    const headers = ['nombre*', 'rut*', 'fechaNacimiento*', 'genero', 'correo', 'tutor', 'correoTutor', 'telefono', 'club', 'colegio', 'direccion'];
+    const headers = ['nombre*', 'rut', 'fechaNacimiento', 'genero', 'correo', 'tutor', 'correoTutor', 'telefono', 'club', 'colegio', 'direccion'];
     const example = ['Juan Pérez González', '12.345.678-9', '2010-03-15', 'M', 'juan@mail.com', 'María González', 'maria@mail.com', '+56 9 1234 5678', 'Club Natación Valdivia', 'Liceo San Carlos', 'Av. Principal 123, Valdivia'];
     const ws = XLSX.utils.aoa_to_sheet([headers, example]);
     ws['!cols'] = [26, 18, 18, 8, 26, 26, 26, 18, 22, 24, 32].map(wch => ({ wch }));
@@ -174,13 +174,13 @@ function SwimmerImport({ group, onClose }) {
   }
 
   function doImport() {
-    const valid = rows.filter(r => r.nombre && r.rut && r.fechaNacimiento);
+    const valid = rows.filter(r => r.nombre);
     valid.forEach(r => DB.addSwimmer({ ...r, group }));
     toast(`${valid.length} nadador${valid.length !== 1 ? 'es' : ''} importado${valid.length !== 1 ? 's' : ''}`);
     onClose();
   }
 
-  const valid = rows ? rows.filter(r => r.nombre && r.rut && r.fechaNacimiento) : [];
+  const valid = rows ? rows.filter(r => r.nombre) : [];
 
   return (
     <Modal title="Importar nadadores desde Excel"
@@ -197,7 +197,7 @@ function SwimmerImport({ group, onClose }) {
             <div>
               <div style={{ fontWeight: 700, color: 'var(--cyan-700)', fontSize: 14, marginBottom: 4 }}>1. Descarga la plantilla Excel</div>
               <div style={{ fontSize: 12.5, color: 'var(--cyan-600)', lineHeight: 1.5 }}>
-                Completa los datos de los nadadores. Las columnas con <strong>*</strong> son obligatorias.<br />
+                Solo el <strong>nombre*</strong> es obligatorio. Los demás datos se pueden agregar después.<br />
                 La fecha de nacimiento debe estar en formato <code>YYYY-MM-DD</code> (ej: 2010-03-15).
               </div>
             </div>
@@ -232,7 +232,7 @@ function SwimmerImport({ group, onClose }) {
                 </thead>
                 <tbody>
                   {rows.map((r, i) => {
-                    const ok = r.nombre && r.rut && r.fechaNacimiento;
+                    const ok = r.nombre;
                     return (
                       <tr key={i} style={{ background: ok ? '' : 'var(--red-bg)' }}>
                         <td><span className={`badge badge-${ok ? 'green' : 'red'}`}>{ok ? '✓' : 'Incompleto'}</span></td>
@@ -249,7 +249,7 @@ function SwimmerImport({ group, onClose }) {
             </div>
             {rows.length - valid.length > 0 && (
               <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--slate-500)' }}>
-                Las filas incompletas (sin nombre, RUT o fecha de nacimiento) serán omitidas al importar.
+                Las filas sin nombre serán omitidas al importar.
               </p>
             )}
           </div>
@@ -331,7 +331,7 @@ function SwimmersView() {
                       <Avatar name={s.nombre} />
                       <div>
                         <div style={{ fontWeight: 700, color: 'var(--ink)' }}>{s.nombre}</div>
-                        <div style={{ fontSize: 12, color: 'var(--slate-400)' }}>{s.genero === 'F' ? 'Femenino' : 'Masculino'} · {DB.ageFor(s.fechaNacimiento)} años</div>
+                        <div style={{ fontSize: 12, color: 'var(--slate-400)' }}>{s.genero === 'F' ? 'Femenino' : 'Masculino'}{DB.ageFor(s.fechaNacimiento) != null ? ` · ${DB.ageFor(s.fechaNacimiento)} años` : ''}</div>
                       </div>
                     </div>
                   </td>
