@@ -13,6 +13,7 @@ import { AttendanceView } from './attendance.jsx';
 import { TrainingsView } from './trainings.jsx';
 import { EvaluationsView } from './evaluations.jsx';
 import { ReportsView } from './reports.jsx';
+import { GoldTimesView } from './goldtimes.jsx';
 
 const LOGO = '/logo.png';
 
@@ -83,6 +84,7 @@ const NAV = [
   { id: 'trainings', label: 'Entrenamientos', icon: 'calendar' },
   { id: 'evaluations', label: 'Evaluaciones', icon: 'timer' },
   { id: 'reports', label: 'Informes', icon: 'doc' },
+  { id: 'goldtimes', label: 'Oro Sudamericano', icon: 'award' },
 ];
 const TITLES = {
   dashboard: ['Inicio', 'Resumen general del programa'],
@@ -91,6 +93,7 @@ const TITLES = {
   trainings: ['Entrenamientos', 'Calendario y planificación de sesiones'],
   evaluations: ['Evaluaciones', 'Cronómetro, brazadas y movimientos subacuáticos'],
   reports: ['Informes', 'Generación de informe mensual en PDF'],
+  goldtimes: ['Oro Sudamericano', 'Tiempos de referencia por prueba y categoría'],
 };
 
 function Shell() {
@@ -141,6 +144,7 @@ function Shell() {
           {route === 'trainings' && <TrainingsView />}
           {route === 'evaluations' && <EvaluationsView />}
           {route === 'reports' && <ReportsView />}
+          {route === 'goldtimes' && <GoldTimesView />}
         </div>
       </main>
 

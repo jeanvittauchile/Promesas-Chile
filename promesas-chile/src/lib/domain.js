@@ -237,7 +237,7 @@ export const PRUEBAS = [
   '400m Libre', '400m Combinado', '800m Libre', '1500m Libre',
 ];
 
-const EVENT_KEY = {
+export const EVENT_KEY = {
   '50m Libre': '50 Free', '50m Espalda': '50 Back', '50m Pecho': '50 Breast', '50m Mariposa': '50 Fly',
   '100m Libre': '100 Free', '100m Espalda': '100 Back', '100m Pecho': '100 Breast', '100m Mariposa': '100 Fly',
   '200m Libre': '200 Free', '200m Espalda': '200 Back', '200m Pecho': '200 Breast', '200m Mariposa': '200 Fly',
@@ -245,33 +245,39 @@ const EVENT_KEY = {
   '800m Libre': '800 Free', '1500m Libre': '1500 Free',
 };
 
-const ORO_SUD_JUV_B = {
-  F: {
-    '50 Free': '00:26.04', '50 Back': '00:29.60', '50 Breast': '00:32.37', '50 Fly': '00:26.55',
-    '100 Free': '00:56.21', '100 Back': '01:03.95', '100 Breast': '01:11.29', '100 Fly': '00:59.96',
-    '200 Free': '02:01.22', '200 Back': '02:15.77', '200 Breast': '02:38.57', '200 Fly': '02:15.22',
-    '200 IM': '02:18.50', '400 Free': '04:18.27', '400 IM': '04:52.34', '800 Free': '08:54.68',
-  },
-  M: {
-    '50 Free': '00:22.88', '50 Back': '00:25.30', '50 Breast': '00:29.22', '50 Fly': '00:24.31',
-    '100 Free': '00:49.92', '100 Back': '00:54.58', '100 Breast': '01:04.04', '100 Fly': '00:54.47',
-    '200 Free': '02:50.62', '200 Back': '02:00.30', '200 Breast': '02:16.23', '200 Fly': '02:04.00',
-    '200 IM': '02:05.66', '400 Free': '04:03.18', '400 IM': '04:28.45', '1500 Free': '15:30.62',
-  },
-};
+export const GOLD_CATS = [
+  { id: 'Juv A', label: 'Juvenil A', minYear: 2011, maxYear: 2012 },
+  { id: 'Juv B', label: 'Juvenil B', minYear: 2008, maxYear: 2010 },
+];
 
-const ORO_SUD_JUV_A = {
-  F: {
-    '50 Free': '00:26.75', '50 Back': '00:30.03', '50 Breast': '00:34.08', '50 Fly': '00:27.67',
-    '100 Free': '00:57.49', '100 Back': '01:03.78', '100 Breast': '01:13.59', '100 Fly': '01:00.90',
-    '200 Free': '02:00.65', '200 Back': '02:13.75', '200 Breast': '02:40.15', '200 Fly': '02:16.01',
-    '200 IM': '02:17.98', '400 Free': '04:09.85', '400 IM': '04:49.17', '800 Free': '08:39.22',
+export const DEFAULT_GOLD_TIMES = {
+  'Juv A': {
+    F: {
+      '50 Free': '00:26.75', '50 Back': '00:30.03', '50 Breast': '00:34.08', '50 Fly': '00:27.67',
+      '100 Free': '00:57.49', '100 Back': '01:03.78', '100 Breast': '01:13.59', '100 Fly': '01:00.90',
+      '200 Free': '02:00.65', '200 Back': '02:13.75', '200 Breast': '02:40.15', '200 Fly': '02:16.01',
+      '200 IM': '02:17.98', '400 Free': '04:09.85', '400 IM': '04:49.17', '800 Free': '08:39.22',
+    },
+    M: {
+      '50 Free': '00:24.13', '50 Back': '00:27.33', '50 Breast': '00:28.44', '50 Fly': '00:25.47',
+      '100 Free': '00:51.34', '100 Back': '00:59.17', '100 Breast': '01:03.63', '100 Fly': '00:56.28',
+      '200 Free': '02:53.00', '200 Back': '02:09.25', '200 Breast': '02:22.19', '200 Fly': '02:05.10',
+      '200 IM': '02:09.65', '400 Free': '04:01.90', '400 IM': '04:38.81', '1500 Free': '15:06.15',
+    },
   },
-  M: {
-    '50 Free': '00:24.13', '50 Back': '00:27.33', '50 Breast': '00:28.44', '50 Fly': '00:25.47',
-    '100 Free': '00:51.34', '100 Back': '00:59.17', '100 Breast': '01:03.63', '100 Fly': '00:56.28',
-    '200 Free': '02:53.00', '200 Back': '02:09.25', '200 Breast': '02:22.19', '200 Fly': '02:05.10',
-    '200 IM': '02:09.65', '400 Free': '04:01.90', '400 IM': '04:38.81', '1500 Free': '15:06.15',
+  'Juv B': {
+    F: {
+      '50 Free': '00:26.04', '50 Back': '00:29.60', '50 Breast': '00:32.37', '50 Fly': '00:26.55',
+      '100 Free': '00:56.21', '100 Back': '01:03.95', '100 Breast': '01:11.29', '100 Fly': '00:59.96',
+      '200 Free': '02:01.22', '200 Back': '02:15.77', '200 Breast': '02:38.57', '200 Fly': '02:15.22',
+      '200 IM': '02:18.50', '400 Free': '04:18.27', '400 IM': '04:52.34', '800 Free': '08:54.68',
+    },
+    M: {
+      '50 Free': '00:22.88', '50 Back': '00:25.30', '50 Breast': '00:29.22', '50 Fly': '00:24.31',
+      '100 Free': '00:49.92', '100 Back': '00:54.58', '100 Breast': '01:04.04', '100 Fly': '00:54.47',
+      '200 Free': '02:50.62', '200 Back': '02:00.30', '200 Breast': '02:16.23', '200 Fly': '02:04.00',
+      '200 IM': '02:05.66', '400 Free': '04:03.18', '400 IM': '04:28.45', '1500 Free': '15:30.62',
+    },
   },
 };
 
@@ -285,14 +291,14 @@ export function parseSwimTime(t) {
   return null;
 }
 
-export function goldTimeFor(prueba, genero, fechaNac) {
+export function goldTimeFor(prueba, genero, fechaNac, customTimes = {}) {
   if (!prueba || !genero || !fechaNac) return null;
   const key = EVENT_KEY[prueba];
   if (!key) return null;
   const y = parseInt(String(fechaNac).slice(0, 4), 10);
-  if (y >= 2011 && y <= 2012) return ORO_SUD_JUV_A[genero]?.[key] ?? null;
-  if (y >= 2008 && y <= 2010) return ORO_SUD_JUV_B[genero]?.[key] ?? null;
-  return null;
+  const cat = GOLD_CATS.find(c => y >= c.minYear && y <= c.maxYear);
+  if (!cat) return null;
+  return customTimes[cat.id]?.[genero]?.[key] ?? DEFAULT_GOLD_TIMES[cat.id]?.[genero]?.[key] ?? null;
 }
 
 export function proximityPct(swimmerTime, goldTime) {
@@ -421,5 +427,6 @@ export function emptyState() {
   return {
     coach: { nombre: '', rol: 'Entrenador', region: '', programa: 'Promesas Chile Natación', email: '' },
     swimmers: [], trainings: [], attendance: {}, evaluations: [], bajas: [], reports: {},
+    goldTimes: {},
   };
 }

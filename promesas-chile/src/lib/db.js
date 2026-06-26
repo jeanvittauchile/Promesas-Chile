@@ -15,7 +15,8 @@ import { supabase, hasSupabaseConfig } from './supabase.js';
 import {
   PROTOCOLS, METRIC_TYPES, CAT_BY_YEAR,
   categoryFor, ageFor, levelFor, parseVolume, volumenFor, uid,
-  PRUEBAS, parseSwimTime, goldTimeFor, proximityPct,
+  PRUEBAS, EVENT_KEY, GOLD_CATS, DEFAULT_GOLD_TIMES,
+  parseSwimTime, goldTimeFor as _goldTimeFor, proximityPct,
   emptyState, seed,
 } from './domain.js';
 
@@ -161,6 +162,7 @@ async function hydrateFromCloud() {
       return;
     }
 
+    next.goldTimes = state.goldTimes || {};
     state = next;
     commit();
   } catch (e) {
@@ -209,9 +211,21 @@ function teardown() {
 
 /* ---------- API pública (idéntica al prototipo) ---------- */
 export const DB = {
-  PROTOCOLS, METRIC_TYPES, CAT_BY_YEAR,
-  categoryFor, ageFor, levelFor, parseVolume, volumenFor, uid,
-  PRUEBAS, parseSwimTime, goldTimeFor, proximityPct,
+  PROTOCOLS, METRIC_TYPES, CAT_BY_YEAR, PRUEBAS, EVENT_KEY, GOLD_CATS, DEFAULT_GOLD_TIMES,
+  categoryFor, ageFor, levelFor, parseVolume, volumenFor, uid, parseSwimTime, proximityPct,
+  goldTimeFor(prueba, genero, fechaNac) { return _goldTimeFor(prueba, genero, fechaNac, state.goldTimes); },
+  updateGoldTime(cat, genero, key, time) {
+    if (!state.goldTimes[cat]) state.goldTimes[cat] = {};
+    if (!state.goldTimes[cat][genero]) state.goldTimes[cat][genero] = {};
+    if (time == null) delete state.goldTimes[cat][genero][key];
+    else state.goldTimes[cat][genero][key] = time;
+    commit();
+  },
+  resetGoldTimes(cat) {
+    if (cat) delete state.goldTimes[cat];
+    else state.goldTimes = {};
+    commit();
+  },
   get: () => state,
   subscribe(fn) { subs.add(fn); return () => subs.delete(fn); },
   isReady: () => ready,
