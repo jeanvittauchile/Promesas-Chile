@@ -121,9 +121,9 @@ function EvalReport({ st, ym }) {
     const byS = {};
     evs.forEach(e => Object.entries(e.data).forEach(([id, d]) => {
       if (!d.laps || !d.laps.length) return;
-      (byS[id] = byS[id] || []).push(...d.laps);
+      (byS[id] = byS[id] || []).push(...d.laps.filter(v => v != null));
     }));
-    return Object.entries(byS).map(([id, laps]) => {
+    return Object.entries(byS).filter(([, laps]) => laps.length > 0).map(([id, laps]) => {
       const avg = laps.reduce((a, b) => a + b, 0) / laps.length;
       const best = Math.min(...laps);
       return { id, label: swName(id), value: avg, best, count: laps.length };
@@ -141,8 +141,9 @@ function EvalReport({ st, ym }) {
     const perSwimmer = {};
     cronoSeries.filter(e => e.protocolo === progProto.p).forEach(e => {
       Object.entries(e.data).forEach(([id, d]) => {
-        if (!d.laps || !d.laps.length) return;
-        const avg = d.laps.reduce((a, b) => a + b, 0) / d.laps.length;
+        const laps = (d.laps || []).filter(v => v != null);
+        if (!laps.length) return;
+        const avg = laps.reduce((a, b) => a + b, 0) / laps.length;
         (perSwimmer[id] = perSwimmer[id] || {})[e.fecha] = avg;
       });
     });
@@ -172,9 +173,9 @@ function EvalReport({ st, ym }) {
     const byS = {};
     evs.forEach(e => Object.entries(e.data).forEach(([id, d]) => {
       if (!d.tramos || !d.tramos.length) return;
-      (byS[id] = byS[id] || []).push(...d.tramos);
+      (byS[id] = byS[id] || []).push(...d.tramos.filter(v => v != null));
     }));
-    return Object.entries(byS).map(([id, t]) => ({ id, label: swName(id), value: t.reduce((a, b) => a + b, 0) / t.length, count: t.length }))
+    return Object.entries(byS).filter(([, t]) => t.length > 0).map(([id, t]) => ({ id, label: swName(id), value: t.reduce((a, b) => a + b, 0) / t.length, count: t.length }))
       .sort((a, b) => a.value - b.value);
   }
   const brazadasRank = rankCount('brazadas');
