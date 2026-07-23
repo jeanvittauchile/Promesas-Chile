@@ -6,7 +6,7 @@ import {
   useStore, useToast, Button, Modal, Field, Empty, Confirm,
   MONTHS, WD_SHORT, fmtDate, fmtDateLong, todayISO, fmtTime, parseTime,
 } from './components.jsx';
-import { BeneficiaryReport } from './benef-report.jsx';
+import { SwimmerGroupReport } from './benef-report.jsx';
 
 
 /* ============================================================
@@ -323,7 +323,7 @@ function SwimmersView() {
   };
 
   if (showReport) {
-    const benList = st.swimmers.filter(s => s.group === 'BEN').sort((a, b) => a.nombre.localeCompare(b.nombre));
+    const reportList = st.swimmers.filter(s => s.group === group).sort((a, b) => a.nombre.localeCompare(b.nombre));
     return (
       <div>
         <div className="toolbar no-print">
@@ -333,7 +333,7 @@ function SwimmersView() {
           <Button icon="download" onClick={() => window.print()}>Descargar PDF</Button>
         </div>
         <div style={{ overflowX: 'auto' }}>
-          <BeneficiaryReport st={st} list={benList} />
+          <SwimmerGroupReport st={st} list={reportList} group={group} />
         </div>
       </div>
     );
@@ -351,7 +351,7 @@ function SwimmersView() {
           <input className="input" placeholder="Buscar por nombre o RUT…" value={q} onChange={e => setQ(e.target.value)} />
         </div>
         <div style={{ flex: 1 }} />
-        {group === 'BEN' && <Button variant="ghost" icon="doc" onClick={() => setShowReport(true)}>Generar PDF</Button>}
+        <Button variant="ghost" icon="doc" onClick={() => setShowReport(true)}>Generar PDF</Button>
         <Button variant="ghost" icon="upload" onClick={() => setImporting(true)}>Importar Excel</Button>
         <Button icon="plus" onClick={() => setEditing('new')}>Nuevo nadador</Button>
       </div>

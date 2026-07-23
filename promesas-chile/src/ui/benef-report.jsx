@@ -4,34 +4,42 @@ import { fmtDate, fmtDateLong, todayISO } from './components.jsx';
 
 
 /* ============================================================
-   benef-report.jsx — Ficha de Beneficiarios en PDF (A4)
+   benef-report.jsx — Ficha de nadadores (DAR / Beneficiarios) en PDF (A4)
    ============================================================ */
-function BeneficiaryReport({ st, list }) {
+function SwimmerGroupReport({ st, list, group }) {
   const coach = st.coach;
   const logoUrl = '/logo.png';
+  const isBen = group === 'BEN';
+  const doctype = isBen ? 'Ficha de Beneficiarios' : 'Ficha de Nadadores DAR';
+  const groupLabel = isBen ? 'beneficiarios' : 'nadadores DAR';
+  const emptyMsg = `Sin ${groupLabel} registrados.`;
 
   const hombres = list.filter(s => s.genero === 'M').length;
   const mujeres = list.filter(s => s.genero === 'F').length;
-  const conTiempo = list.filter(s => s.tiempo).length;
+  const ages = list.map(s => DB.ageFor(s.fechaNacimiento)).filter(a => a != null);
+  const avgAge = ages.length ? Math.round((ages.reduce((a, b) => a + b, 0) / ages.length) * 10) / 10 : null;
 
   const pctFor = (s) => {
     const gt = DB.goldTimeFor(s.prueba, s.genero, s.fechaNacimiento);
     return gt ? DB.proximityPct(s.tiempo, gt) : null;
   };
-  const pcts = list.map(pctFor).filter(p => p != null);
+  const conTiempo = isBen ? list.filter(s => s.tiempo).length : null;
+  const pcts = isBen ? list.map(pctFor).filter(p => p != null) : [];
   const avgPct = pcts.length ? Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length) : null;
+
+  const table1Cols = isBen ? 7 : 5;
 
   return (
     <div className="report-viewer">
 
-      {/* ══════════════ PÁGINA 1: Resumen + Prueba/Tiempo ══════════════ */}
+      {/* ══════════════ PÁGINA 1: Resumen + Datos deportivos ══════════════ */}
       <div className="report-page">
         <div className="rp-header">
           <div className="rp-brand">
             <img src={logoUrl} alt="Promesas Chile" />
             <div>
               <div className="rp-program">Promesas Chile · Natación</div>
-              <div className="rp-doctype">Ficha de Beneficiarios</div>
+              <div className="rp-doctype">{doctype}</div>
             </div>
           </div>
           <div className="rp-period">
@@ -52,7 +60,7 @@ function BeneficiaryReport({ st, list }) {
           <div className="rp-stats">
             <div className="rp-stat">
               <div className="rp-stat-v">{list.length}</div>
-              <div className="rp-stat-l">Beneficiarios</div>
+              <div className="rp-stat-l">{isBen ? 'Beneficiarios' : 'Nadadores DAR'}</div>
             </div>
             <div className="rp-stat">
               <div className="rp-stat-v">{hombres}</div>
@@ -62,19 +70,28 @@ function BeneficiaryReport({ st, list }) {
               <div className="rp-stat-v">{mujeres}</div>
               <div className="rp-stat-l">Mujeres</div>
             </div>
-            <div className="rp-stat">
-              <div className="rp-stat-v">{conTiempo}</div>
-              <div className="rp-stat-l">Con tiempo registrado</div>
-            </div>
-            <div className="rp-stat rp-stat-hl">
-              <div className="rp-stat-v">{avgPct != null ? `${avgPct}%` : '—'}</div>
-              <div className="rp-stat-l">Promedio % del oro sudamericano</div>
-            </div>
+            {isBen ? (
+              <>
+                <div className="rp-stat">
+                  <div className="rp-stat-v">{conTiempo}</div>
+                  <div className="rp-stat-l">Con tiempo registrado</div>
+                </div>
+                <div className="rp-stat rp-stat-hl">
+                  <div className="rp-stat-v">{avgPct != null ? `${avgPct}%` : '—'}</div>
+                  <div className="rp-stat-l">Promedio % del oro sudamericano</div>
+                </div>
+              </>
+            ) : (
+              <div className="rp-stat rp-stat-hl">
+                <div className="rp-stat-v">{avgAge != null ? avgAge : '—'}</div>
+                <div className="rp-stat-l">Edad promedio</div>
+              </div>
+            )}
           </div>
         </div>
 
         <div className="rp-section">
-          <h2 className="rp-h">Prueba de clasificación</h2>
+          <h2 className="rp-h">{isBen ? 'Prueba de clasificación' : 'Datos generales'}</h2>
           <table className="rp-table">
             <thead>
               <tr>
@@ -82,29 +99,41 @@ function BeneficiaryReport({ st, list }) {
                 <th>Categoría</th>
                 <th>Género</th>
                 <th>RUT</th>
-                <th>Prueba</th>
-                <th className="num">Tiempo</th>
-                <th className="num">% Oro</th>
+                {isBen ? (
+                  <>
+                    <th>Prueba</th>
+                    <th className="num">Tiempo</th>
+                    <th className="num">% Oro</th>
+                  </>
+                ) : (
+                  <th>Club</th>
+                )}
               </tr>
             </thead>
             <tbody>
               {list.map(s => {
-                const p = pctFor(s);
+                const p = isBen ? pctFor(s) : null;
                 return (
                   <tr key={s.id}>
                     <td className="strong">{s.nombre}</td>
                     <td>{DB.categoryFor(s.fechaNacimiento)}</td>
                     <td>{s.genero === 'F' ? 'Femenino' : 'Masculino'}</td>
                     <td>{s.rut || '—'}</td>
-                    <td>{s.prueba || '—'}</td>
-                    <td className="num">{s.tiempo || '—'}</td>
-                    <td className="num strong">{p != null ? `${p}%` : '—'}</td>
+                    {isBen ? (
+                      <>
+                        <td>{s.prueba || '—'}</td>
+                        <td className="num">{s.tiempo || '—'}</td>
+                        <td className="num strong">{p != null ? `${p}%` : '—'}</td>
+                      </>
+                    ) : (
+                      <td>{s.club || '—'}</td>
+                    )}
                   </tr>
                 );
               })}
               {list.length === 0 && (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', color: '#8A99A6', padding: '20px 10px' }}>Sin beneficiarios registrados.</td>
+                  <td colSpan={table1Cols} style={{ textAlign: 'center', color: '#8A99A6', padding: '20px 10px' }}>{emptyMsg}</td>
                 </tr>
               )}
             </tbody>
@@ -118,7 +147,7 @@ function BeneficiaryReport({ st, list }) {
       {/* ══════════════ PÁGINA 2: Datos de contacto ══════════════ */}
       <div className="report-page">
         <div className="rp-cont-header">
-          <span className="rp-cont-title">Promesas Chile · Natación — Ficha de Beneficiarios</span>
+          <span className="rp-cont-title">Promesas Chile · Natación — {doctype}</span>
           <span className="rp-cont-meta">{fmtDate(todayISO())}</span>
         </div>
 
@@ -150,7 +179,7 @@ function BeneficiaryReport({ st, list }) {
               ))}
               {list.length === 0 && (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', color: '#8A99A6', padding: '20px 10px' }}>Sin beneficiarios registrados.</td>
+                  <td colSpan={7} style={{ textAlign: 'center', color: '#8A99A6', padding: '20px 10px' }}>{emptyMsg}</td>
                 </tr>
               )}
             </tbody>
@@ -171,4 +200,4 @@ function BeneficiaryReport({ st, list }) {
   );
 }
 
-export { BeneficiaryReport };
+export { SwimmerGroupReport };
